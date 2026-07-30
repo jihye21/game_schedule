@@ -219,6 +219,15 @@ button:disabled {
     font-size: 12px;
 }
 
+.add-box input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid #dfe6e9;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
 .add-box button {
     padding: 6px 10px;
     font-size: 12px;

@@ -64,6 +64,47 @@ section h2 {
     margin-bottom: 12px;
 }
 
+/* 입력 박스 공통 디자인 */
+.add-box {
+    display: flex;
+    gap: 5px;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px dashed #b2bec3;
+}
+
+.add-box input {
+    flex: 1;
+    padding: 6px;
+    border: 1px solid #dfe6e9;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.add-box input[type="text"] {
+    flex: 2;
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid #dfe6e9;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.add-box input[type="number"] {
+    flex: 1;
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid #dfe6e9;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.add-box button {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
 /* 퀘스트 승인 카드 */
 .parent-quest-item {
     background: #fff;
@@ -111,24 +152,7 @@ button:hover {
     background: #c0392b;
 }
 
-/* 상점 추가 박스 */
-.add-shop-box {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    background: #f8f9fa;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px dashed #b2bec3;
-}
-
-.add-shop-box input {
-    padding: 8px;
-    border: 1px solid #dfe6e9;
-    border-radius: 6px;
-    font-size: 13px;
-}
-
+/* 관리 리스트 아이템 스타일 */
 .shop-manage-item {
     background: #fff;
     border: 1px solid #dfe6e9;
@@ -139,4 +163,23 @@ button:hover {
     align-items: center;
     margin-bottom: 8px;
     font-size: 13px;
+}
+
+.shop-manage-item input[type="text"],
+.shop-manage-item input[type="number"] {
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 13px;
+    color: var(--text-color);
+    transition: all 0.2s ease-in-out;
+}
+
+.shop-manage-item input[type="text"]:focus,
+.shop-manage-item input[type="number"]:focus {
+    background: #ffffff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(9, 132, 227, 0.15);
+    outline: none;
 }
