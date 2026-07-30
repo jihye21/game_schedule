@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>game_schedule - 보호자 관리 센터 🛡️</title>
+    <link rel="stylesheet" href="parent.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>🛡️ 보호자 관리 센터</h1>
+        </header>
+
+        <!-- 아이 요약 상태 -->
+        <div class="status-box">
+            <h2>현재 상태</h2>
+            <div id="childStatusInfo">
+                레벨: Lv.1 | 골드: 🪙 150G | 펫: 🟢 귀여운 아기 슬라임
+            </div>
+        </div>
+
+        <!-- 숙제 승인 관리 -->
+        <section>
+            <h2>⚔️ 숙제 완료 승인 요청 목록</h2>
+            <div id="parentQuestList">
+                <!-- JS로 동적 생성 -->
+            </div>
+        </section>
+
+        <!-- 상점 아이템 관리 -->
+        <section>
+            <h2>🎁 상점 관리</h2>
+            <div class="add-shop-box">
+                <input type="text" id="newItemName" placeholder="새로운 보상 이름 (예: 게임 1시간)">
+                <input type="number" id="newItemPrice" placeholder="가격 (골드)">
+                <button onclick="addShopItem()">아이템 추가하기</button>
+            </div>
+            <div id="parentShopList" style="margin-top: 15px;">
+                <!-- JS로 동적 생성 -->
+            </div>
+        </section>
+    </div>
+
+    <script src="parent.js"></script>
+</body>
+</html>

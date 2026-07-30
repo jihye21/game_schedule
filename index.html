@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>game_schedule</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1>🎮 game_schedule</h1>
+        </header>
+
+        <!-- 상태창 -->
+        <div class="status-box">
+            <div class="status-row">
+                <span id="levelText">🐾 펫 레벨: Lv.1</span>
+                <span id="goldText">🪙 0 G</span>
+            </div>
+            <div class="status-row" style="font-size: 12px; margin-bottom: 5px;">
+                <span>EXP</span>
+                <span id="expText">0 / 100</span>
+            </div>
+            <div class="exp-bar-container">
+                <div class="exp-bar" id="expBar"></div>
+            </div>
+        </div>
+
+        <!-- 펫 영역 -->
+        <div class="pet-section">
+            <div class="pet-avatar" id="petAvatar">🥚</div>
+            <div id="petName">꼬마 알 (부화 대기중)</div>
+        </div>
+
+        <!-- 타임 스케줄러 영역 -->
+        <section>
+            <h2>⏰ 오늘의 시간 계획표</h2>
+            <div class="add-box">
+                <input type="text" id="childScheduleTime" placeholder="시간 (예: 10:00)">
+                <input type="text" id="childScheduleTask" placeholder="할 일 입력">
+                <button onclick="childAddSchedule()">계획 추가</button>
+            </div>
+            <div class="schedule-list" id="scheduleList" style="margin-top: 10px;">
+                <!-- JS로 동적 생성 -->
+            </div>
+        </section>
+
+        <!-- 오늘의 숙제 퀘스트 -->
+        <section>
+            <h2>⚔️ 오늘의 숙제 퀘스트</h2>
+            <div class="add-box">
+                <input type="text" id="childQuestTitle" placeholder="숙제 이름">
+                <input type="number" id="childQuestExp" placeholder="EXP">
+                <input type="number" id="childQuestGold" placeholder="골드">
+                <button onclick="childAddQuest()">퀘스트 추가</button>
+            </div>
+            <div id="questList" style="margin-top: 10px;">
+                <!-- JS로 동적 생성 -->
+            </div>
+        </section>
+
+        <!-- 리얼 보상 상점 -->
+        <section>
+            <h2>🎁 리얼 보상 상점</h2>
+            <div class="shop-grid" id="shopList">
+                <!-- JS로 동적 생성 -->
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

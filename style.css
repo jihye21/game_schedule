@@ -1,0 +1,225 @@
+:root {
+    --primary-color: #6c5ce7;
+    --secondary-color: #a29bfe;
+    --bg-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-color: #2d3436;
+    --accent-color: #ff7675;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 15px;
+    display: flex;
+    justify-content: center;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 480px;
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 25px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    color: var(--primary-color);
+    font-size: 22px;
+    margin: 0 0 5px 0;
+}
+
+/* 상태 창 (레벨, 경험치, 골드) */
+.status-box {
+    background: linear-gradient(135deg, #ffeaa7, #ffeaa7);
+    padding: 15px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    border: 2px solid #fdcb6e;
+    box-shadow: inset 0 2px 5px rgba(255,255,255,0.6);
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    font-size: 15px;
+    margin-bottom: 8px;
+}
+
+.exp-bar-container {
+    background: #dfe6e9;
+    height: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.exp-bar {
+    background: #00b894;
+    height: 100%;
+    width: 0%;
+    transition: width 0.4s ease;
+}
+
+/* 펫 영역 */
+.pet-section {
+    background: #fab1a0;
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+    color: white;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.pet-avatar {
+    font-size: 40px;
+    margin: 5px 0;
+}
+
+/* 섹션 공통 스타일 */
+section {
+    margin-bottom: 25px;
+}
+
+section h2 {
+    font-size: 16px;
+    color: var(--primary-color);
+    border-bottom: 2px solid #dfe6e9;
+    padding-bottom: 5px;
+    margin-bottom: 12px;
+}
+
+/* 타임 스케줄러 스타일 */
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.schedule-item {
+    background: #f1f2f6;
+    padding: 10px 15px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.schedule-item:hover {
+    background: #dfe4ea;
+}
+
+.schedule-time {
+    font-weight: bold;
+    color: #57606f;
+    font-size: 14px;
+}
+
+.schedule-task {
+    font-size: 14px;
+}
+
+/* 숙제 리스트 */
+.quest-item {
+    background: #ffffff;
+    border: 2px solid #dfe6e9;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.quest-info .quest-title {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 3px;
+}
+
+.quest-info .quest-reward {
+    font-size: 12px;
+    color: #e17055;
+}
+
+button {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+button:hover {
+    background: #5f27cd;
+}
+
+button:disabled {
+    background: #b2bec3;
+    cursor: not-allowed;
+}
+
+/* 상점 스타일 */
+.shop-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.shop-item {
+    background: #fff;
+    border: 2px dashed #74b9ff;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.shop-item h3 {
+    font-size: 13px;
+    margin: 5px 0;
+}
+
+.shop-item p {
+    font-size: 12px;
+    color: #0984e3;
+    margin-bottom: 8px;
+}
+
+/* 아이/보호자 공통 입력 박스 스타일 */
+.add-box {
+    display: flex;
+    gap: 5px;
+    background: #f1f2f6;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px dashed #b2bec3;
+}
+
+.add-box input {
+    flex: 1;
+    padding: 6px;
+    border: 1px solid #dfe6e9;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.add-box button {
+    padding: 6px 10px;
+    font-size: 12px;
+}
