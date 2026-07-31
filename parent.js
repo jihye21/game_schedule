@@ -102,7 +102,8 @@ async function getAllGroups() {
 // 현재 선택된 그룹 ID 가져오기/저장하기
 function getCurrentGroupId() {
     const familyKey = "game_schedule_current_id_" + getCurrentFamilyId();
-    return localStorage.getItem(familyKey) || "group_" + Date.now();
+    
+    return localStorage.getItem(familyKey) || "";
 }
 
 function setCurrentGroupId(id) {
@@ -113,8 +114,8 @@ function setCurrentGroupId(id) {
 }
 
 // 현재 활성화된 그룹 객체 가져오기
-function getCurrentGroup() {
-    const groups = getAllGroups();
+async function getCurrentGroup() {
+    const groups = await getAllGroups();
     const currentId = getCurrentGroupId();
     let group = groups.find(g => g.id === currentId);
     if (!group) {
@@ -132,7 +133,7 @@ async function saveCurrentGroup(updatedGroup) {
     const index = groups.findIndex(g => g.id === currentId);
     if (index !== -1) {
         groups[index] = updatedGroup;
-        saveStateToSheet(groups, currentId);
+        saveStateToSheet(groups, getCurrentFamilyId());
     }
 }
 
@@ -143,11 +144,9 @@ async function renderGroupSelector() {
     
     const familyId = getCurrentFamilyId();
     const allGroups = await getAllGroups();
-
-    const groups = allGroups.filter(g=> g.familyId === familyId);
+    const groups = Array.isArray(allGroups) ? allGroups : [];
 
     const currentId = getCurrentGroupId();
-
     select.innerHTML = "";
     groups.forEach(g => {
         const option = document.createElement("option");
@@ -211,7 +210,7 @@ function copyChildLink() {
     const childLink = `${baseUrl}child.html?family=${familyId}&group=${currentId}`;
 
     navigator.clipboard.writeText(childLink).then(() => {
-        alert("자녀용 접속 링크가 복사되었습니다! 📋\n아이에게 이 링크를 전달해주세요.\n\n" + childLink);
+        alert("자녀용 접속 링크가 복사되었습니다");
     }).catch(err => {
         prompt("링크 복사에 실패했습니다. 아래 주소를 직접 복사하세요:", childLink);
     });
@@ -263,7 +262,7 @@ async function deleteCurrentGroup() {
     const currentId = getCurrentGroupId();
     const currentGroup = groups.find(g => g.id === currentId);
     const familyId = getCurrentFamilyId();
-    const cacheKey = "cache_groups_" + familyId;
+    const cacheKey = "family_" + familyId;
 
     if (confirm(`정말 "${currentGroup ? currentGroup.name : '현재 그룹'}"을(를) 삭제하시겠습니까?`)) {
         groups = groups.filter(g => g.id !== currentId);
@@ -290,7 +289,7 @@ async function deleteCurrentGroup() {
 // 로컬스토리지
 async function getState() {
     const familyId = getCurrentFamilyId();
-    const cacheKey = "cache_groups_" + familyId;
+    const cacheKey = "family_" + familyId;
 
     let groups = [];
     const cachedData = localStorage.getItem(cacheKey);
@@ -330,7 +329,7 @@ async function saveState(state) {
     }
 
     const familyId = getCurrentFamilyId();
-    const cacheKey = "cache_groups_" + familyId;
+    const cacheKey = "family_" + familyId;
 
     const index = groups.findIndex(g => g.id === state.id);
     if (index !== -1) {
@@ -442,7 +441,7 @@ async function renderParent() {
 
 async function saveGroupsToStorage(groups) {
     const familyId = getCurrentFamilyId();
-    const cacheKey = "cache_groups_" + familyId;
+    const cacheKey = "family_" + familyId;
     const timestamp = Date.now();
 
     const dateToSave = {
