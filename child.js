@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtrOAfwi1cYcwAc8wemvHIAjejkK5-N2C18c06o8iLet26fSZ0KOSJeYDC2aGVQgFocQ/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJJxfR2S0-JWvEUIxjpB12JUhKsUQ8lF8-UknzadnBOmrqQa8Lv16ZYPgFBm9e6BFFOg/exec";
 
 // 현재 Family ID 가져오기
 function getCurrentFamilyId() {
@@ -60,6 +60,9 @@ async function getAllGroups() {
         console.error("데이터 로드 실패:", error);
         return defaultGroups;
     }
+
+    window.location.href = "404.html";
+    return [];
 }
 
 // 현재 선택된 그룹 ID 가져오기/저장하기

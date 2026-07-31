@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtrOAfwi1cYcwAc8wemvHIAjejkK5-N2C18c06o8iLet26fSZ0KOSJeYDC2aGVQgFocQ/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJJxfR2S0-JWvEUIxjpB12JUhKsUQ8lF8-UknzadnBOmrqQa8Lv16ZYPgFBm9e6BFFOg/exec";
 
 // 홈 화면 제어 스크립트 (home.js)
 const defaultGroups = [
@@ -16,15 +16,6 @@ const defaultGroups = [
     }
 ];
 
-function getAllFamilies() {
-    const data = localStorage.getItem("game_schedule_all_groups");
-    if (!data) {
-        localStorage.setItem("game_schedule_all_groups", JSON.stringify(defaultGroups));
-        return defaultGroups;
-    }
-    return JSON.parse(data);
-}
-
 // 새 가정 생성
 async function createFamily() {
     const nameInput = document.getElementById("newFamilyName");
@@ -34,7 +25,6 @@ async function createFamily() {
         return;
     }
 
-    let families = await getAllFamilies();
     const newId = "family_" + Date.now();
 
     const newFamily = {
@@ -42,15 +32,15 @@ async function createFamily() {
         name: name,
         level: 1,
         exp: 0,
-        gold: 100,
+        gold: 0,
         petName: "귀여운 알",
         petAvatar: "🥚",
         schedules: [],
         quests: [],
-        shop: [{ id: 1, name: "간식 획득권", price: 200 }]
+        shop: []
     };
 
-    await saveState(newFamily);
+    await saveStateToSheet([newFamily], newId);
 
     nameInput.value = "";
     alert(`"${name}" 공간이 생성되었습니다! 🎉`);
@@ -58,25 +48,12 @@ async function createFamily() {
     window.location.href = `parent.html?group=${newId}`;
 }
 
-async function saveState(state) {
-    let groups = await getAllFamilies();
-    
-    if (!Array.isArray(groups)) {
-        groups = defaultGroups;
-    }
-
-    const index = groups.findIndex(g => g.id === state.id);
-    if (index !== -1) {
-        groups[index] = state;
-    } else {
-        groups.push(state);
-    }
-    
-    const familyId = state.id;
-    
+// 내부 저장 전용 헬퍼 함수
+async function saveStateToSheet(groupsData, familyId) {
     try {
-        const res = await fetch(APPS_SCRIPT_URL, {
+        await fetch(APPS_SCRIPT_URL, {
             method: "POST",
+            mode: "cors",
             redirect: "follow",
             headers: {
                 "Content-Type": "text/plain;charset=utf-8",
@@ -84,24 +61,11 @@ async function saveState(state) {
             body: JSON.stringify({
                 action: "save",
                 familyId: familyId,
-                groups: groups
+                groups: groupsData
             })
         });
-        
-        const result = await res.json();
-        
-        if (typeof renderParent === "function") {
-            renderParent();
-        }
-        
-        if (result.status !== "success") {
-            console.error("구글 시트 저장 실패:", result.message);
-            alert("저장에 실패했습니다: " + result.message);
-        } else {
-            console.log("구글 시트 저장 성공!");
-        }
     } catch (error) {
-        console.error("통신 에러 발생:", error);
-        alert("서버 통신 중 오류가 발생했습니다.");
+        console.error("구글 시트 저장 통신 에러:", error);
     }
 }
+

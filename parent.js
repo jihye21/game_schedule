@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtrOAfwi1cYcwAc8wemvHIAjejkK5-N2C18c06o8iLet26fSZ0KOSJeYDC2aGVQgFocQ/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJJxfR2S0-JWvEUIxjpB12JUhKsUQ8lF8-UknzadnBOmrqQa8Lv16ZYPgFBm9e6BFFOg/exec";
 
 // URL에서 groupId를 읽어오는 함수
 function getQueryParam(param) {
@@ -55,12 +55,13 @@ async function getAllGroups() {
         
         if (result.status === "success" && Array.isArray(result.data) && result.data.length > 0) {
             return result.data;
-        }
+        } 
     } catch (error) {
         console.error("데이터 로드 실패:", error);
     }
     
-    return defaultGroups;
+    window.location.href = "404.html";
+    return [];
 }
 
 // 현재 선택된 그룹 ID 가져오기/저장하기
@@ -89,18 +90,18 @@ function getCurrentGroup() {
 }
 
 // 현재 그룹 상태만 업데이트하여 저장하기
-function saveCurrentGroup(updatedGroup) {
-    let groups = getAllGroups();
+async function saveCurrentGroup(updatedGroup) {
+    let groups = await getAllGroups();
     const currentId = getCurrentGroupId();
 
     const index = groups.findIndex(g => g.id === currentId);
     if (index !== -1) {
         groups[index] = updatedGroup;
-        localStorage.setItem(getStorageKey(), JSON.stringify(groups));
+        await saveStateToSheet(groups, currentId);
     }
 }
 
-// 그룹 선택 박스 렌더링 (렌더 함수 내부에 포함하거나 초기 실행 시 호출)
+// 그룹 선택 박스 렌더링
 async function renderGroupSelector() {
     const select = document.getElementById("groupSelect");
     if (!select) return;
@@ -129,11 +130,11 @@ function changeGroup(groupId) {
 }
 
 // 새로운 그룹 추가
-function addNewGroup() {
+async function addNewGroup() {
     const name = prompt("새로운 그룹 이름을 입력하세요:", "새로운 그룹");
     if (!name) return;
 
-    let groups = getAllGroups();
+    let groups = await getAllGroups();
     const newId = "group_" + Date.now();
     
     const newGroup = {
@@ -141,18 +142,19 @@ function addNewGroup() {
         name: name,
         level: 1,
         exp: 0,
-        gold: 100,
+        gold: 0,
         petName: "귀여운 알",
         petAvatar: "🥚",
         schedules: [],
         quests: [],
-        shop: [
-            { id: 1, name: "간식 획득권", price: 200 }
-        ]
+        shop: []
     };
 
     groups.push(newGroup);
-    localStorage.setItem(getStorageKey(), JSON.stringify(groups));
+    
+    const familyId = getCurrentFamilyId();
+    await saveStateToSheet(groups, familyId);
+
     setCurrentGroupId(newId);
 
     alert(`"${name}" 그룹이 생성되었습니다! 🎉`);
@@ -176,21 +178,65 @@ function copyChildLink() {
     });
 }
 
+// 내부 저장 전용 헬퍼 함수
+async function saveStateToSheet(groupsData, familyId) {
+    try {
+        await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            mode: "cors",
+            redirect: "follow",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8",
+            },
+            body: JSON.stringify({
+                action: "save",
+                familyId: familyId,
+                groups: groupsData
+            })
+        });
+    } catch (error) {
+        console.error("구글 시트 저장 통신 에러:", error);
+    }
+}
+
+async function deleteStateToSheet(familyId){
+    try{
+        await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            redirect: "follow",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8",
+            },
+            body: JSON.stringify({
+                action: "deleteSheet",
+                familyId: familyId
+            })
+        });
+    } catch (error) {
+        console.error("구글 시트 행 삭제 통신 에러:" , error);
+    }
+}
+
 // 현재 그룹 삭제 함수
 async function deleteCurrentGroup() {
     let groups = await getAllGroups();
-    if (groups.length <= 1) {
-        window.location.href = "index.html";
-        return;
-    }
 
     const currentId = getCurrentGroupId();
     const currentGroup = groups.find(g => g.id === currentId);
+    const familyId = getCurrentFamilyId();
 
     if (confirm(`정말 "${currentGroup ? currentGroup.name : '현재 그룹'}"을(를) 삭제하시겠습니까?`)) {
         groups = groups.filter(g => g.id !== currentId);
-        localStorage.setItem(getStorageKey(), JSON.stringify(groups));
         
+        if(groups.length === 0){
+            await deleteStateToSheet(familyId);
+            alert("그룹이 삭제되었습니다.");
+            window.location.href = "index.html";
+            return;
+        }
+
+        await saveStateToSheet(groups, familyId);
+
         setCurrentGroupId(groups[0].id);
         alert("그룹이 삭제되었습니다.");
         
@@ -229,28 +275,7 @@ async function saveState(state) {
     
     const familyId = getCurrentFamilyId();
     
-    try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            redirect: "follow",
-            headers: {
-                "Content-Type": "text/plain;charset=utf-8",
-            },
-            body: JSON.stringify({
-                action: "save",
-                familyId: familyId,
-                groups: groups
-            })
-        });
-        
-        const result = await res.json();
-        renderParent();
-        if (result.status !== "success") {
-            console.error("구글 시트 저장 실패:", result.message);
-        }
-    } catch (error) {
-        console.error("통신 에러 발생:", error);
-    }
+    await saveStateToSheet(groups, familyId);
 }
 
 // 보호자 화면 렌더링 함수
