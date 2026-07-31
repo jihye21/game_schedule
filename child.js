@@ -1,5 +1,7 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJJxfR2S0-JWvEUIxjpB12JUhKsUQ8lF8-UknzadnBOmrqQa8Lv16ZYPgFBm9e6BFFOg/exec";
 
+let saveTimeout = null;
+
 // 현재 Family ID 가져오기
 function getCurrentFamilyId() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -36,7 +38,18 @@ const defaultGroups = [
 // 전체 그룹 데이터를 가져오거나 초기화
 async function getAllGroups() {
     const familyId = getCurrentFamilyId();
+    const cacheKey = "family_" + familyId;
 
+    const cachedData = localStorage.getItem(cacheKey);
+    if(cachedData){
+        try {
+            const parsed = JSON.parse(cachedData);
+            if(Array.isArray(parsed)) return parsed;
+            if(parsed && Array.isArray(parsed.groups)) {
+                return parsed.groups;
+            }
+        } catch (e) {}
+    }
     try {
         const res = await fetch(APPS_SCRIPT_URL, {
             method: "POST",
@@ -81,7 +94,33 @@ function setCurrentGroupId(id) {
 
 // 로컬스토리지
 async function getState() {
-    const groups = await getAllGroups() || [];
+    const familyId = getCurrentFamilyId();
+    const cacheKey = "family_" + familyId;
+
+    let groups = [];
+    const cachedData = localStorage.getItem(cacheKey);
+
+    if (cachedData) {
+        try {
+            const parsed = JSON.parse(cachedData);
+            if (Array.isArray(parsed)) {
+                groups = parsed;
+            } else if (parsed && Array.isArray(parsed.groups)) {
+                groups = parsed.groups;
+            }
+        } catch (e) {
+            console.error("캐시 파싱 에러:", e);
+        }
+    }
+
+    if (!Array.isArray(groups) || groups.length === 0) {
+        groups = (await getAllGroups()) || [];
+    }
+
+    if (groups.length === 0) {
+        return null;
+    }
+
     const currentId = getCurrentGroupId();
     let group = groups.find(g => g.id === currentId);
 
@@ -89,7 +128,7 @@ async function getState() {
         group = groups[0];
         setCurrentGroupId(group.id);
     }
-    
+
     return JSON.parse(JSON.stringify(group));
 }
 
@@ -120,6 +159,9 @@ async function saveState(state) {
         groups = defaultGroups;
     }
 
+    const familyId = getCurrentFamilyId();
+    const cacheKey = "family_" + familyId;
+
     const index = groups.findIndex(g => g.id === state.id);
     
     if (index !== -1) {
@@ -128,7 +170,7 @@ async function saveState(state) {
         groups.push(state);
     }
     
-    const familyId = getCurrentFamilyId();
+    localStorage.setItem(cacheKey, JSON.stringify(groups));
     await saveStateToSheet(groups, familyId);
     
     if (typeof renderChild === "function") {
@@ -208,57 +250,114 @@ async function render() {
     });
 }
 
+
+async function saveGroupsToStorage(groups) {
+    const familyId = getCurrentFamilyId();
+    const cacheKey = "family_" + familyId;
+    const timestamp = Date.now();
+
+    const dateToSave = {
+        timestamp: timestamp,
+        groups: groups
+    };
+
+    localStorage.setItem(cacheKey, JSON.stringify(dateToSave));
+
+    if (saveTimeout) clearTimeout(saveTimeout);
+
+    saveTimeout = setTimeout(async () => {
+        await saveStateToSheet(groups, familyId);
+    }, 500);
+}
+
 // 계획표 추가
 async function childAddSchedule() {
-    let state = await getState();
     const time = document.getElementById("childScheduleTime").value.trim();
     const task = document.getElementById("childScheduleTask").value.trim();
     if (!time || !task) return alert("시간과 할 일을 입력하세요!");
 
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     const newId = state.schedules.length > 0 ? state.schedules[state.schedules.length - 1].id + 1 : 1;
     state.schedules.push({ id: newId, time, task });
-    await saveState(state);
+    await saveGroupsToStorage(groups);
     
     document.getElementById("childScheduleTime").value = "";
     document.getElementById("childScheduleTask").value = "";
     render();
 }
 
+async function childUpdateSchedule(id) {
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
+    state.schedules = state.schedules.filter(item => item.id !== id);
+    await saveGroupsToStorage(groups);
+    renderParent();
+}
+
 async function childDeleteSchedule(id) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     state.schedules = state.schedules.filter(s => s.id !== id);
-    await saveState(state);
+    await saveGroupsToStorage(groups);
     render();
 }
 
 // 퀘스트 추가
 async function childAddQuest() {
-    let state = await getState();
     const title = document.getElementById("childQuestTitle").value.trim();
     if (!title) return alert("숙제 이름을 입력해주세요");
 
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     const newId = state.quests.length > 0 ? state.quests[state.quests.length - 1].id + 1 : 1;
     state.quests.push({ id: newId, title, rewardExp: 0, rewardGold: 0, status: "none" });
-    await saveState(state);
+    await saveGroupsToStorage(groups);
 
     document.getElementById("childQuestTitle").value = "";
     render();
 }
 
 async function childDeleteQuest(id) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     state.quests = state.quests.filter(q => q.id !== id);
-    await saveState(state);
+    await saveGroupsToStorage(groups);
     render();
 }
 
 // 숙제 완료 요청 함수
 async function requestQuest(id) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     const q = state.quests.find(item => item.id === id);
     if (q) {
         q.status = "requested";
-        await saveState(state);
+        await saveGroupsToStorage(groups);
         alert("확인해주세요");
         render();
     }
@@ -266,10 +365,15 @@ async function requestQuest(id) {
 
 // 상점 아이템 구매 함수
 async function buyItem(id, price) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     if (state.gold >= price) {
         state.gold -= price;
-        await saveState(state);
+        await saveGroupsToStorage(groups);
         alert("상점 아이템을 구매했습니다🎉");
         render();
     } else {
