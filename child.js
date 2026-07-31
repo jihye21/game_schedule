@@ -182,6 +182,8 @@ async function saveState(state) {
 async function render() {
     let state = await getState();
 
+    getPetInfoByLevel(state.level);
+
     // 상태창
     document.getElementById("levelText").innerText = `🐾 펫 레벨: Lv.${state.level}`;
     document.getElementById("goldText").innerText = `${state.gold} G`;
@@ -217,7 +219,7 @@ async function render() {
         } else if (q.status === "requested") {
             btnHtml = `<button disabled style="background:#fdcb6e;">승인 대기중⏳</button>`;
         } else if (q.status === "approved") {
-            btnHtml = `<button disabled style="background:#00b894;">완료 완료!🎉</button>`;
+            btnHtml = `<button disabled style="background:#00b894;">완료🎉</button>`;
         }
 
         const qItem = document.createElement("div");
@@ -268,6 +270,71 @@ async function saveGroupsToStorage(groups) {
     saveTimeout = setTimeout(async () => {
         await saveStateToSheet(groups, familyId);
     }, 500);
+}
+
+// 레벨에 따른 펫 정보 정의
+function getPetInfoByLevel(level) {
+    if (level >= 30) {
+        return { petName: "우주신 천상룡", petAvatar: "🌌" };
+    } else if (level === 29) {
+        return { petName: "차원 지배자", petAvatar: "🌀" };
+    } else if (level === 28) {
+        return { petName: "별을 품은 피닉스", petAvatar: "🔥" };
+    } else if (level === 27) {
+        return { petName: "태양의 신수", petAvatar: "☀️" };
+    } else if (level === 26) {
+        return { petName: "달빛의 수호자", petAvatar: "🌙" };
+    } else if (level === 25) {
+        return { petName: "얼어붙은 빙하지배자", petAvatar: "🧊" };
+    } else if (level === 24) {
+        return { petName: "심해의 크라켄", petAvatar: "🦑" };
+    } else if (level === 23) {
+        return { petName: "번개를 품은 독수리", petAvatar: "🦅" };
+    } else if (level === 22) {
+        return { petName: "정령의 왕", petAvatar: "🧚" };
+    } else if (level === 21) {
+        return { petName: "무쇠 기계 골렘", petAvatar: "🤖" };
+    } else if (level === 20) {
+        return { petName: "암흑의 유령 기사", petAvatar: "👻" };
+    } else if (level === 19) {
+        return { petName: "황금 사자왕", petAvatar: "🦁" };
+    } else if (level === 18) {
+        return { petName: "보석 유니콘", petAvatar: "🦄" };
+    } else if (level === 17) {
+        return { petName: "천상의 페가수스", petAvatar: "🐎" };
+    } else if (level === 16) {
+        return { petName: "지혜로운 부엉이", petAvatar: "🦉" };
+    } else if (level === 15) {
+        return { petName: "수호 늑대", petAvatar: "🐺" };
+    } else if (level === 14) {
+        return { petName: "곰돌이 대장", petAvatar: "🐻" };
+    } else if (level === 13) {
+        return { petName: "팬더 도사", petAvatar: "🐼" };
+    } else if (level === 12) {
+        return { petName: "날쌘돌이 치타", petAvatar: "🐆" };
+    } else if (level === 11) {
+        return { petName: "황금 드래곤", petAvatar: "🐉" };
+    } else if (level === 10) {
+        return { petName: "꼬마 아기 용", petAvatar: "🐲" };
+    } else if (level === 9) {
+        return { petName: "화염 불꽃여우", petAvatar: "🦊" };
+    } else if (level === 8) {
+        return { petName: "날개 달린 사자", petAvatar: "🦁" };
+    } else if (level === 7) {
+        return { petName: "멋진 유니콘", petAvatar: "🦄" };
+    } else if (level === 6) {
+        return { petName: "용감한 호랑이", petAvatar: "🐯" };
+    } else if (level === 5) {
+        return { petName: "귀여운 고양이", petAvatar: "🐱" };
+    } else if (level === 4) {
+        return { petName: "초록 토끼", petAvatar: "🐰" };
+    } else if (level === 3) {
+        return { petName: "귀여운 강아지", petAvatar: "🐶" };
+    } else if (level === 2) {
+        return { petName: "꿈틀거리는 애벌레", petAvatar: "🐛" };
+    } else {
+        return { petName: "귀여운 알", petAvatar: "🥚" };
+    }
 }
 
 // 계획표 추가
