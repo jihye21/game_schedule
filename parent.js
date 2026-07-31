@@ -1,4 +1,5 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtrOAfwi1cYcwAc8wemvHIAjejkK5-N2C18c06o8iLet26fSZ0KOSJeYDC2aGVQgFocQ/exec";
+
 // URL에서 groupId를 읽어오는 함수
 function getQueryParam(param) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -176,8 +177,8 @@ function copyChildLink() {
 }
 
 // 현재 그룹 삭제 함수
-function deleteCurrentGroup() {
-    let groups = getAllGroups();
+async function deleteCurrentGroup() {
+    let groups = await getAllGroups();
     if (groups.length <= 1) {
         window.location.href = "index.html";
         return;

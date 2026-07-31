@@ -69,9 +69,16 @@ function getCurrentGroupId() {
     return urlParams.get("group") || (defaultGroups[0] ? defaultGroups[0].id : "group_1");
 }
 
+function setCurrentGroupId(id) {
+    const familyKey = "game_schedule_current_id_" + getCurrentFamilyId();
+    localStorage.setItem(familyKey, id);
+
+    if (typeof renderGroupSelector === "function") renderGroupSelector();
+}
+
 // 로컬스토리지
 async function getState() {
-    const groups = await getAllGroups();
+    const groups = await getAllGroups() || [];
     const currentId = getCurrentGroupId();
     let group = groups.find(g => g.id === currentId);
 

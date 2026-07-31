@@ -1,3 +1,5 @@
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtrOAfwi1cYcwAc8wemvHIAjejkK5-N2C18c06o8iLet26fSZ0KOSJeYDC2aGVQgFocQ/exec";
+
 // 홈 화면 제어 스크립트 (home.js)
 const defaultGroups = [
     {
@@ -24,7 +26,7 @@ function getAllFamilies() {
 }
 
 // 새 가정 생성
-function createFamily() {
+async function createFamily() {
     const nameInput = document.getElementById("newFamilyName");
     const name = nameInput.value.trim();
     if (!name) {
@@ -32,7 +34,7 @@ function createFamily() {
         return;
     }
 
-    let families = getAllFamilies();
+    let families = await getAllFamilies();
     const newId = "family_" + Date.now();
 
     const newFamily = {
@@ -48,11 +50,58 @@ function createFamily() {
         shop: [{ id: 1, name: "간식 획득권", price: 200 }]
     };
 
-    families.push(newFamily);
-    localStorage.setItem("game_schedule_all_groups", JSON.stringify(families));
+    await saveState(newFamily);
 
     nameInput.value = "";
     alert(`"${name}" 공간이 생성되었습니다! 🎉`);
 
     window.location.href = `parent.html?group=${newId}`;
+}
+
+async function saveState(state) {
+    let groups = await getAllFamilies();
+    
+    if (!Array.isArray(groups)) {
+        groups = defaultGroups;
+    }
+
+    const index = groups.findIndex(g => g.id === state.id);
+    if (index !== -1) {
+        groups[index] = state;
+    } else {
+        groups.push(state);
+    }
+    
+    const familyId = state.id;
+    
+    try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            redirect: "follow",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8",
+            },
+            body: JSON.stringify({
+                action: "save",
+                familyId: familyId,
+                groups: groups
+            })
+        });
+        
+        const result = await res.json();
+        
+        if (typeof renderParent === "function") {
+            renderParent();
+        }
+        
+        if (result.status !== "success") {
+            console.error("구글 시트 저장 실패:", result.message);
+            alert("저장에 실패했습니다: " + result.message);
+        } else {
+            console.log("구글 시트 저장 성공!");
+        }
+    } catch (error) {
+        console.error("통신 에러 발생:", error);
+        alert("서버 통신 중 오류가 발생했습니다.");
+    }
 }
