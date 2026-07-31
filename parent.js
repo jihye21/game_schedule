@@ -1,5 +1,7 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJJxfR2S0-JWvEUIxjpB12JUhKsUQ8lF8-UknzadnBOmrqQa8Lv16ZYPgFBm9e6BFFOg/exec";
 
+let saveTimeout = null;
+
 // URL에서 groupId를 읽어오는 함수
 function getQueryParam(param) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -39,10 +41,38 @@ const defaultGroups = [
     }
 ];
 
+//백그라운드에서 서버 데이터를 가져오기
+async function syncFromServerInBackground(familyId, cacheKey){
+    try{
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({action: "get", familyId: familyId })
+        });
+        const result = await response.json();
+        if(result.status === "success" && Array.isArray(result.data)) {
+            localStorage.setItem(cacheKey, JSON.stringify(result.data));
+        }
+    } catch (e){
+        //무시
+    }
+}
+
 // 전체 그룹 데이터를 가져오거나 초기화
 async function getAllGroups() {
     const familyId = getCurrentFamilyId();
-    
+    const cacheKey = "family_" + familyId;
+
+    const cachedData = localStorage.getItem(cacheKey);
+    if(cachedData){
+        try {
+            const parsed = JSON.parse(cachedData);
+            if(Array.isArray(parsed)) return parsed;
+            if(parsed && Array.isArray(parsed.groups)) {
+                return parsed.groups;
+            }
+        } catch (e) {}
+    }
+
     try {
         const response = await fetch(APPS_SCRIPT_URL, {
             method: "POST",
@@ -54,6 +84,11 @@ async function getAllGroups() {
         const result = await response.json();
         
         if (result.status === "success" && Array.isArray(result.data) && result.data.length > 0) {
+            const initialData = {
+                timestamp: Date.now(),
+                groups: result.data
+            };
+            localStorage.setItem(cacheKey, JSON.stringify(initialData));
             return result.data;
         } 
     } catch (error) {
@@ -97,7 +132,7 @@ async function saveCurrentGroup(updatedGroup) {
     const index = groups.findIndex(g => g.id === currentId);
     if (index !== -1) {
         groups[index] = updatedGroup;
-        await saveStateToSheet(groups, currentId);
+        saveStateToSheet(groups, currentId);
     }
 }
 
@@ -106,7 +141,11 @@ async function renderGroupSelector() {
     const select = document.getElementById("groupSelect");
     if (!select) return;
     
-    const groups = await getAllGroups();
+    const familyId = getCurrentFamilyId();
+    const allGroups = await getAllGroups();
+
+    const groups = allGroups.filter(g=> g.familyId === familyId);
+
     const currentId = getCurrentGroupId();
 
     select.innerHTML = "";
@@ -153,7 +192,7 @@ async function addNewGroup() {
     groups.push(newGroup);
     
     const familyId = getCurrentFamilyId();
-    await saveStateToSheet(groups, familyId);
+    saveStateToSheet(groups, familyId);
 
     setCurrentGroupId(newId);
 
@@ -224,17 +263,20 @@ async function deleteCurrentGroup() {
     const currentId = getCurrentGroupId();
     const currentGroup = groups.find(g => g.id === currentId);
     const familyId = getCurrentFamilyId();
+    const cacheKey = "cache_groups_" + familyId;
 
     if (confirm(`정말 "${currentGroup ? currentGroup.name : '현재 그룹'}"을(를) 삭제하시겠습니까?`)) {
         groups = groups.filter(g => g.id !== currentId);
         
         if(groups.length === 0){
+            localStorage.removeItem(cacheKey);
             await deleteStateToSheet(familyId);
             alert("그룹이 삭제되었습니다.");
             window.location.href = "index.html";
             return;
         }
 
+        localStorage.setItem(cacheKey, JSON.stringify(groups));
         await saveStateToSheet(groups, familyId);
 
         setCurrentGroupId(groups[0].id);
@@ -247,24 +289,48 @@ async function deleteCurrentGroup() {
 
 // 로컬스토리지
 async function getState() {
-    const groups = await getAllGroups();
+    const familyId = getCurrentFamilyId();
+    const cacheKey = "cache_groups_" + familyId;
+
+    let groups = [];
+    const cachedData = localStorage.getItem(cacheKey);
+
+    if(cachedData){
+        try {
+            const parsed = JSON.parse(cachedData);
+            if (Array.isArray(parsed)) {
+                groups = parsed;
+            } else if (parsed && Array.isArray(parsed.groups)) {
+                groups = parsed.groups;
+            }
+        } catch (e) {
+            console.error("캐시 파싱 에러:", e);
+        }
+    }
+
+    if (!Array.isArray(groups) || groups.length === 0) {
+        groups = await getAllGroups();
+    }
+
     const currentId = getCurrentGroupId();
-    let group = groups.find(g => g.id === currentId);
-    
-    if (!group) {
+    let group = groups.find(g=>g.id === currentId);
+
+    if(!group && groups.length > 0) {
         group = groups[0];
         setCurrentGroupId(group.id);
     }
-    
-    return JSON.parse(JSON.stringify(group));
+    return group ? JSON.parse(JSON.stringify(group)) : null;
 }
 
 async function saveState(state) {
     let groups = await getAllGroups();
     
     if (!Array.isArray(groups)) {
-        groups = defaultGroups;
+        groups = [];
     }
+
+    const familyId = getCurrentFamilyId();
+    const cacheKey = "cache_groups_" + familyId;
 
     const index = groups.findIndex(g => g.id === state.id);
     if (index !== -1) {
@@ -272,10 +338,10 @@ async function saveState(state) {
     } else {
         groups.push(state);
     }
+
+    localStorage.setItem(cacheKey, JSON.stringify(groups));
     
-    const familyId = getCurrentFamilyId();
-    
-    await saveStateToSheet(groups, familyId);
+    saveStateToSheet(groups, familyId);
 }
 
 // 보호자 화면 렌더링 함수
@@ -374,11 +440,28 @@ async function renderParent() {
     }
 }
 
+async function saveGroupsToStorage(groups) {
+    const familyId = getCurrentFamilyId();
+    const cacheKey = "cache_groups_" + familyId;
+    const timestamp = Date.now();
+
+    const dateToSave = {
+        timestamp: timestamp,
+        groups: groups
+    };
+
+    localStorage.setItem(cacheKey, JSON.stringify(dateToSave));
+
+    if (saveTimeout) clearTimeout(saveTimeout);
+
+    saveTimeout = setTimeout(async () => {
+        await saveStateToSheet(groups, familyId);
+    }, 500);
+}
 // --- 보호자 함수들 ---
 
 // 시간 계획표 추가
 async function addScheduleItem() {
-    let state = await getState();
     const timeInput = document.getElementById("newScheduleTime");
     const taskInput = document.getElementById("newScheduleTask");
     const time = timeInput.value.trim();
@@ -389,9 +472,16 @@ async function addScheduleItem() {
         return;
     }
 
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     const newId = state.schedules.length > 0 ? state.schedules[state.schedules.length - 1].id + 1 : 1;
     state.schedules.push({ id: newId, time, task });
-    saveState(state);
+    
+    await saveGroupsToStorage(groups);
 
     timeInput.value = "";
     taskInput.value = "";
@@ -401,25 +491,34 @@ async function addScheduleItem() {
 
 //시간표 업데이트
 async function updateSchedule(id, field, value) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+    
     const target = state.schedules.find(s => s.id === id);
     if (target) {
         target[field] = value;
-        saveState(state);
+        await saveGroupsToStorage(groups);
     }
 }
 
 // 시간 계획표 삭제
 async function deleteScheduleItem(id) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     state.schedules = state.schedules.filter(item => item.id !== id);
-    saveState(state);
+    await saveGroupsToStorage(groups);
     renderParent();
 }
 
 // 숙제 퀘스트 추가
 async function addQuestItem() {
-    let state = await getState();
     const titleInput = document.getElementById("newQuestTitle");
     const expInput = document.getElementById("newQuestExp");
     const goldInput = document.getElementById("newQuestGold");
@@ -433,9 +532,16 @@ async function addQuestItem() {
         return;
     }
 
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     const newId = state.quests.length > 0 ? state.quests[state.quests.length - 1].id + 1 : 1;
     state.quests.push({ id: newId, title, rewardExp, rewardGold, status: "none" });
-    saveState(state);
+    
+    await saveGroupsToStorage(groups);
 
     titleInput.value = "";
     expInput.value = "";
@@ -446,25 +552,40 @@ async function addQuestItem() {
 
 //숙제 업데이트
 async function updateQuest(id, field, value) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     const target = state.quests.find(q => q.id === id);
     if (target) {
         target[field] = (field === 'rewardExp' || field === 'rewardGold') ? Number(value) : value;
-        saveState(state);
+        await saveGroupsToStorage(groups);
     }
 }
 
 // 숙제 삭제
 async function deleteQuestItem(id) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     state.quests = state.quests.filter(item => item.id !== id);
-    saveState(state);
+    await saveGroupsToStorage(groups);
     renderParent();
 }
 
 // 숙제 승인 함수 (골드 및 경험치 지급 + 레벨업 체크)
 async function approveQuest(id) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     const q = state.quests.find(item => item.id === id);
     if (q) {
         const expInput = document.getElementById(`exp-input-${id}`);
@@ -492,7 +613,7 @@ async function approveQuest(id) {
             alert("펫이 레벨 업 했습니다");
         }
 
-        saveState(state);
+        await saveGroupsToStorage(groups);
         alert(`"${q.title}" 숙제를 승인하고 보상(EXP +${rewardExp}, 골드 + ${rewardGold}G을 지급했습니다)`);
         renderParent();
     }
@@ -500,7 +621,6 @@ async function approveQuest(id) {
 
 // 상점 아이템 추가
 async function addShopItem() {
-    let state = await getState();
     const nameInput = document.getElementById("newItemName");
     const priceInput = document.getElementById("newItemPrice");
     const name = nameInput.value.trim();
@@ -511,9 +631,15 @@ async function addShopItem() {
         return;
     }
 
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     const newId = state.shop.length > 0 ? state.shop[state.shop.length - 1].id + 1 : 1;
     state.shop.push({ id: newId, name, price });
-    saveState(state);
+    await saveGroupsToStorage(groups);
 
     nameInput.value = "";
     priceInput.value = "";
@@ -523,19 +649,29 @@ async function addShopItem() {
 
 //상점 아이템 업데이트
 async function updateShop(id, field, value) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     const target = state.shop.find(s => s.id === id);
     if (target) {
         target[field] = (field === 'price') ? Number(value) : value;
-        saveState(state);
+        await saveGroupsToStorage(groups);
     }
 }
 
 // 상점 아이템 삭제
 async function deleteShopItem(id) {
-    let state = await getState();
+    let groups = await getAllGroups();
+    const currentId = getCurrentGroupId();
+    let state = groups.find(g=>g.id === currentId);
+
+    if(!state) return;
+
     state.shop = state.shop.filter(item => item.id !== id);
-    saveState(state);
+    await saveGroupsToStorage(groups);
     renderParent();
 }
 

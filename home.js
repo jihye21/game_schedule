@@ -26,9 +26,10 @@ async function createFamily() {
     }
 
     const newId = "family_" + Date.now();
+    const newGroupId = "group_" + Date.now();
 
     const newFamily = {
-        id: newId,
+        id: newGroupId,
         name: name,
         level: 1,
         exp: 0,
