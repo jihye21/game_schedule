@@ -42,6 +42,7 @@ const defaultGroups = [
 ];
 
 //백그라운드에서 서버 데이터를 가져오기
+/*
 async function syncFromServerInBackground(familyId, cacheKey){
     try{
         const response = await fetch(APPS_SCRIPT_URL, {
@@ -55,7 +56,7 @@ async function syncFromServerInBackground(familyId, cacheKey){
     } catch (e){
         //무시
     }
-}
+}*/
 
 // 전체 그룹 데이터를 가져오거나 초기화
 async function getAllGroups() {
