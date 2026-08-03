@@ -166,6 +166,7 @@ button:hover {
 }
 
 .shop-manage-item input[type="text"],
+.shop-manage-item input[type="time"],
 .shop-manage-item input[type="number"] {
     border: 1px solid transparent;
     background: transparent;
@@ -177,6 +178,7 @@ button:hover {
 }
 
 .shop-manage-item input[type="text"]:focus,
+.shop-manage-item input[type="time"]:focus,
 .shop-manage-item input[type="number"]:focus {
     background: #ffffff;
     border-color: var(--primary-color);

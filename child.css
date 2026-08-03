@@ -232,3 +232,37 @@ button:disabled {
     padding: 6px 10px;
     font-size: 12px;
 }
+
+/* 시간표 목록 스타일 */
+.schedule-time {
+    background: #fff;
+    border: 1px solid #dfe6e9;
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.schedule-time input[type="text"],
+.schedule-time input[type="time"],
+.schedule-time input[type="number"] {
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 13px;
+    color: var(--text-color);
+    transition: all 0.2s ease-in-out;
+}
+
+.schedule-time input[type="text"]:focus,
+.schedule-time input[type="time"]:focus,
+.schedule-time input[type="number"]:focus {
+    background: #ffffff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(9, 132, 227, 0.15);
+    outline: none;
+}

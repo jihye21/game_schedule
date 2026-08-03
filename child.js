@@ -196,14 +196,20 @@ async function render() {
     // 시간표
     const scheduleContainer = document.getElementById("scheduleList");
     scheduleContainer.innerHTML = "";
-    state.schedules.forEach((sch) => {
+
+    const sortedSchedules = [...state.schedules].sort((a,b)=> {
+        return a.time.localeCompare(b.time);
+    });
+
+    sortedSchedules.forEach((sch) => {
         const item = document.createElement("div");
-        item.className = "schedule-item";
+        item.className = "schedule-time";
         item.innerHTML = `
-            <span class="schedule-time">⏰ ${sch.time}</span>
-            <span class="schedule-task">${sch.task}</span>
-            <button style="background:#d63031; padding:4px 8px; font-size:11px;" onclick="childDeleteSchedule(${sch.id})">삭제</button>
-        `;
+            <span >⏰</span>
+            <input type="time" value="${sch.time}" onchange="childUpdateSchedule(${sch.id}, 'time', this.value)">
+            <input type="text" value="${sch.task}" onchange="childUpdateSchedule(${sch.id}, 'task', this.value)" placeholder="할 일 입력">
+            <button style="background:#d63031; padding:4px 8px; font-size:11px;" onclick="childDeleteSchedule(${sch.id})">삭제</button>        
+            `;
         scheduleContainer.appendChild(item);
     });
 
@@ -243,10 +249,15 @@ async function render() {
     state.shop.forEach(s => {
         const sItem = document.createElement("div");
         sItem.className = "shop-item";
+
+        const buyButton = s.isPurchased 
+        ? `<button disabled style="background:#b2bec3; cursor:not-allowed;">구매완료</button>` 
+        : `<button onclick="buyItem(${s.id}, ${s.price})">구매하기</button>`;
+
         sItem.innerHTML = `
             <h3>${s.name}</h3>
             <p>${s.price} G</p>
-            <button onclick="buyItem(${s.id}, ${s.price})">구매하기</button>
+            ${buyButton}
         `;
         shopContainer.appendChild(sItem);
     });
@@ -358,16 +369,19 @@ async function childAddSchedule() {
     render();
 }
 
-async function childUpdateSchedule(id) {
+async function childUpdateSchedule(id, time, task) {
     let groups = await getAllGroups();
     const currentId = getCurrentGroupId();
     let state = groups.find(g=>g.id === currentId);
 
     if(!state) return;
 
-    state.schedules = state.schedules.filter(item => item.id !== id);
-    await saveGroupsToStorage(groups);
-    renderParent();
+    const target = state.schedules.find(s=> s.id === id);
+    if(target) {
+        target[time] = task;
+        await saveGroupsToStorage(groups);
+    }
+    render();
 }
 
 async function childDeleteSchedule(id) {
@@ -440,6 +454,13 @@ async function buyItem(id, price) {
 
     if (state.gold >= price) {
         state.gold -= price;
+
+        //아이템 구매 상태를 true로 변경
+        const targetItem = state.shop.find(s => s.id === id);
+        if (targetItem) {
+            targetItem.isPurchased = true;
+        }
+
         await saveGroupsToStorage(groups);
         alert("상점 아이템을 구매했습니다🎉");
         render();

@@ -358,13 +358,18 @@ async function renderParent() {
     const scheduleContainer = document.getElementById("parentScheduleList");
     if (scheduleContainer) {
         scheduleContainer.innerHTML = "";
-        state.schedules.forEach(sch => {
+
+        const sortedSchedules = [...state.schedules].sort((a, b) => {
+            return a.time.localeCompare(b.time);
+        });
+
+        sortedSchedules.forEach(sch => {
             const item = document.createElement("div");
             item.className = "shop-manage-item";
             item.innerHTML = `
                 <div style="display:flex; gap:5px; flex:1; align-items:center;">
-                    <input type="text" value="${sch.time}" style="width:60px; padding:4px; font-size:12px;" onchange="updateSchedule(${sch.id}, 'time', this.value)">
-                    <input type="text" value="${sch.task}" style="flex:1; padding:4px; font-size:12px;" onchange="updateSchedule(${sch.id}, 'task', this.value)">
+                    <input type="time" value="${sch.time}" style="flex: 1; min-width: 100px; padding: 4px; font-size: 12px;" onchange="updateSchedule(${sch.id}, 'time', this.value)">
+                    <input type="text" value="${sch.task}" style="flex: 2; padding: 4px; font-size: 12px;" onchange="updateSchedule(${sch.id}, 'task', this.value)">
                 </div>
                 <button class="btn-danger" onclick="deleteScheduleItem(${sch.id})" style="margin-left:8px;">삭제</button>            `;
             scheduleContainer.appendChild(item);
@@ -389,7 +394,7 @@ async function renderParent() {
         });
     }
 
-    // 숙제 승인 요청 리스트
+    // 숙제 확인 목록
     const questContainer = document.getElementById("parentQuestList");
     if (questContainer) {
         questContainer.innerHTML = "";
@@ -401,22 +406,23 @@ async function renderParent() {
             } else if (q.status === "requested") {
                 actionArea =`
                     <div style="display:flex; gap:4px; align-items:center;">
-                        <input type="number" id="exp-input-${q.id}" placeholder="EXP" style="width:45px; padding:4px; font-size:11px;" value="${q.rewardExp || 30}">
-                        <input type="number" id="gold-input-${q.id}" placeholder="골드" style="width:45px; padding:4px; font-size:11px;" value="${q.rewardGold || 30}">
+                        <input type="number" id="exp-input-${q.id}" placeholder="EXP" style="width:45px; padding:4px; font-size:11px;" value="${q.rewardExp}">
+                        <input type="number" id="gold-input-${q.id}" placeholder="골드" style="width:45px; padding:4px; font-size:11px;" value="${q.rewardGold}">
                         <button onclick="approveQuest(${q.id})" style="padding:6px 8px; font-size:11px;">승인✅</button>
                     </div>
                     `;
             } else if(q.status === "approved") {
-                actionArea = `<span style="color:#00b894; font-size:12px; font-weight:bold;">승인완료 (EXP +${q.rewardExp}, 🪙 +${q.rewardGold}G)</span>`;            }
+                actionArea = `<span style="color:#00b894; font-size:12px; font-weight:bold;">승인완료 (EXP +${q.rewardExp}, +${q.rewardGold}G)</span>`;            }
 
             const item = document.createElement("div");
-            item.className = "parent-quest-item";
+            item.className = "parent-quest-item shop-manage-item";
             item.innerHTML = `
                 <div class="parent-quest-info">
                     <div class="title">${q.title}</div>
                     <div class="status">상태: ${q.status}</div>
                 </div>
                 ${actionArea}
+                <button style="background:#d63031; padding:8px; font-size:11px;" onclick="deleteQuestItem(${q.id})">삭제</button>
             `;
             questContainer.appendChild(item);
         });
@@ -429,10 +435,16 @@ async function renderParent() {
         state.shop.forEach(s => {
             const sItem = document.createElement("div");
             sItem.className = "shop-manage-item";
+
+            const statusText = s.isPurchased 
+            ? `<span style="color:#00b894; font-size:11px; font-weight:bold; white-space:nowrap;">구매완료✅</span>` 
+            : `<span style="color:#b2bec3; font-size:11px; white-space:nowrap;">대기 중</span>`;
+            
             sItem.innerHTML = `
                 <div style="display:flex; gap:4px; flex:1; align-items:center;">
                     <input type="text" value="${s.name}" style="flex:2; padding:4px; font-size:12px;" onchange="updateShop(${s.id}, 'name', this.value)" placeholder="보상 이름">
                     <input type="number" value="${s.price}" style="flex:1; padding:4px; font-size:12px;" onchange="updateShop(${s.id}, 'price', this.value)" placeholder="가격">
+                    ${statusText}
                 </div>
                 <button class="btn-danger" onclick="deleteShopItem(${s.id})" style="margin-left:8px;">삭제</button>            `;
             shopContainer.appendChild(sItem);
@@ -525,12 +537,7 @@ async function addQuestItem() {
 
     const title = titleInput.value.trim();
     const rewardExp = Number(expInput.value);
-    const rewardGold = Number(goldInput.value);
-
-    if (!title || !rewardExp || !rewardGold) {
-        alert("이름과 보상(EXP, 골드)을 모두 입력해주세요");
-        return;
-    }
+    const rewardGold = Number(goldInput.value); 
 
     let groups = await getAllGroups();
     const currentId = getCurrentGroupId();
@@ -594,11 +601,6 @@ async function approveQuest(id) {
         const rewardExp = Number(expInput ? expInput.value : 30);
         const rewardGold = Number(goldInput ? goldInput.value : 30);
 
-        if(!rewardExp || !rewardGold) {
-            alert("지정할 EXP와 골드를 입력해주세요");
-            return;
-        }
-
         q.rewardExp = rewardExp;
         q.rewardGold = rewardGold;
         q.status = "approved";
@@ -638,7 +640,7 @@ async function addShopItem() {
     if(!state) return;
 
     const newId = state.shop.length > 0 ? state.shop[state.shop.length - 1].id + 1 : 1;
-    state.shop.push({ id: newId, name, price });
+    state.shop.push({ id: newId, name, price, isPurchased: false });
     await saveGroupsToStorage(groups);
 
     nameInput.value = "";
