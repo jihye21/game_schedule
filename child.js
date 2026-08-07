@@ -66,7 +66,12 @@ async function getAllGroups() {
 
         const result = await res.json();
         
-        if (result.status === "success" && result.data) {
+        if (result.status === "success" && Array.isArray(result.data) && result.data.length > 0) {
+            const initialData = {
+                timestamp: Date.now(),
+                groups: result.data
+            };
+            localStorage.setItem(cacheKey, JSON.stringify(initialData));
             return result.data;
         } 
     } catch (error) {
